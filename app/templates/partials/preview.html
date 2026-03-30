@@ -1,0 +1,62 @@
+<!-- =========================
+ Affiliate HTML Maker
+ Generated from text input
+========================== -->
+
+<style>
+{{ card_styles | safe }}
+</style>
+
+<div class="csc-wrap">
+{% for section in sections %}
+  <div class="csc-section">
+    {% if section.title %}
+    <h2>{{ section.title }}</h2>
+    {% endif %}
+    <div class="csc-grid">
+    {% for product in section.products %}
+      <div class="csc-card">
+        <div class="csc-top">
+          <p class="csc-title">
+            <a href="{{ product.amazon_url }}" target="_blank" rel="nofollow noopener">{{ product.title }}</a>
+          </p>
+          <div class="csc-badges">
+          {% for badge in product.badges %}
+            <span class="csc-badge{% if badge.variant == 'gray' %} gray{% endif %}">{{ badge.text }}</span>
+          {% endfor %}
+          </div>
+        </div>
+
+        {% if product.meta_lines %}
+        <ul class="csc-meta">
+        {% for item in product.meta_lines %}
+          <li>{{ item }}</li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if product.price_lines %}
+        <div class="csc-price">
+        {% for price_line in product.price_lines %}
+          <p class="line">
+            <span class="label">{{ price_line.label }}</span>
+            {% if price_line.discounted_value %}
+              <span class="csc-black">{{ price_line.value }}</span>
+              <span>⇒</span>
+              <span class="csc-red">{{ price_line.discounted_value }}</span>
+            {% else %}
+              <span class="csc-red">{{ price_line.value }}</span>
+            {% endif %}
+          </p>
+        {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+    </div>
+  </div>
+  {% if not loop.last %}
+  <div class="csc-divider"></div>
+  {% endif %}
+{% endfor %}
+</div>

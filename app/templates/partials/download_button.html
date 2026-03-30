@@ -1,0 +1,11 @@
+<div id="download-button-slot"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <button
+    class="shell-button shell-button-secondary"
+    type="button"
+    id="download-button"
+    data-requires-text
+    {% if disabled %}disabled{% endif %}
+  >
+    HTMLをダウンロード
+  </button>
+</div>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="/static/js/app.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <section class="shell-hero">
+      <p class="shell-kicker">Affiliate HTML Generator</p>
+      <h1>{{ app_name }}</h1>
+      <p class="shell-copy">商品テキストを貼り付けると、カード形式のHTMLをプレビューしてそのままダウンロードできます。</p>
+    </section>
+
+    <section class="shell-panel">
+      <form
+        id="generator-form"
+        hx-post="/preview"
+        hx-target="#preview-panel"
+        hx-swap="innerHTML"
+      >
+        <label class="shell-label" for="source_text">商品テキスト</label>
+        <textarea
+          id="source_text"
+          name="source_text"
+          class="shell-textarea"
+          placeholder="ここに商品テキストを貼り付けてください"
+        >{{ initial_text }}</textarea>
+
+        <div class="shell-actions">
+          <button class="shell-button" type="submit" data-requires-text>プレビューを更新</button>
+          {% include "partials/download_button.html" %}
+        </div>
+      </form>
+    </section>
+
+    <section class="shell-preview">
+      <div class="shell-preview-head">
+        <h2>Preview</h2>
+        <p>HTMX でこの領域だけを更新します。</p>
+      </div>
+      <div id="preview-panel" class="shell-preview-body"></div>
+    </section>
+  </main>
+</body>
+</html>
