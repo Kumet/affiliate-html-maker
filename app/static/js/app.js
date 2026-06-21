@@ -1,25 +1,56 @@
-const sourceTextarea = document.querySelector("#source_text");
+const sourceTextareas = document.querySelectorAll("[data-input-source]");
 const interactiveButtons = document.querySelectorAll("[data-requires-text]");
+const tabs = document.querySelectorAll("[data-tab-target]");
+const tabPanels = document.querySelectorAll("[data-tab-panel]");
 
 function syncActionState() {
-  const hasText = Boolean(sourceTextarea?.value.trim());
   interactiveButtons.forEach((button) => {
+    const textareaId = button.getAttribute("data-source-textarea");
+    const textarea = textareaId ? document.getElementById(textareaId) : null;
+    const hasText = Boolean(textarea instanceof HTMLTextAreaElement && textarea.value.trim());
     button.disabled = !hasText;
   });
 }
 
-if (sourceTextarea) {
-  sourceTextarea.addEventListener("input", syncActionState);
-  syncActionState();
+sourceTextareas.forEach((textarea) => {
+  textarea.addEventListener("input", syncActionState);
+});
+syncActionState();
+
+function activateTab(targetId) {
+  tabs.forEach((tab) => {
+    const isActive = tab.getAttribute("data-tab-target") === targetId;
+    tab.classList.toggle("is-active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+  });
+
+  tabPanels.forEach((panel) => {
+    const isActive = panel.id === targetId;
+    panel.classList.toggle("is-active", isActive);
+    panel.hidden = !isActive;
+  });
 }
 
-function submitDownload() {
-  if (!sourceTextarea || !sourceTextarea.value.trim()) {
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const targetId = tab.getAttribute("data-tab-target");
+    if (!targetId) {
+      return;
+    }
+
+    activateTab(targetId);
+  });
+});
+
+function submitDownload(textareaId, parseMode) {
+  const sourceTextarea = textareaId ? document.getElementById(textareaId) : null;
+  if (!(sourceTextarea instanceof HTMLTextAreaElement) || !sourceTextarea.value.trim()) {
     return;
   }
 
   const form = document.createElement("form");
   const field = document.createElement("textarea");
+  const parseModeField = document.createElement("input");
 
   form.method = "post";
   form.action = "/download";
@@ -27,8 +58,12 @@ function submitDownload() {
 
   field.name = "source_text";
   field.value = sourceTextarea.value;
+  parseModeField.type = "hidden";
+  parseModeField.name = "parse_mode";
+  parseModeField.value = parseMode || "product";
 
   form.appendChild(field);
+  form.appendChild(parseModeField);
   document.body.appendChild(form);
   form.submit();
   document.body.removeChild(form);
@@ -36,10 +71,13 @@ function submitDownload() {
 
 document.addEventListener("click", (event) => {
   const target = event.target;
-  if (!(target instanceof HTMLElement) || target.id !== "download-button") {
+  if (!(target instanceof HTMLElement) || !target.hasAttribute("data-download-button")) {
     return;
   }
 
   event.preventDefault();
-  submitDownload();
+  submitDownload(
+    target.getAttribute("data-source-textarea"),
+    target.getAttribute("data-parse-mode")
+  );
 });

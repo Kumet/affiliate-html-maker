@@ -17,25 +17,120 @@
     </section>
 
     <section class="shell-panel">
-      <form
-        id="generator-form"
-        hx-post="/preview"
-        hx-target="#preview-panel"
-        hx-swap="innerHTML"
-      >
-        <label class="shell-label" for="source_text">商品テキスト</label>
-        <textarea
-          id="source_text"
-          name="source_text"
-          class="shell-textarea"
-          placeholder="ここに商品テキストを貼り付けてください"
-        >{{ initial_text }}</textarea>
-
-        <div class="shell-actions">
-          <button class="shell-button" type="submit" data-requires-text>プレビューを更新</button>
-          {% include "partials/download_button.html" %}
+      <div class="shell-tabs-wrap">
+        <p class="shell-tabs-label">入力フォーマット</p>
+        <div class="shell-tabs" role="tablist" aria-label="入力形式の切り替え">
+        <button
+          class="shell-tab is-active"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="product-panel"
+          id="product-tab"
+          data-tab-target="product-panel"
+        >
+          商品テキスト
+        </button>
+        <button
+          class="shell-tab"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="mail-panel"
+          id="mail-tab"
+          data-tab-target="mail-panel"
+        >
+          メール内容
+        </button>
         </div>
-      </form>
+      </div>
+
+      <div class="shell-tabpanes">
+        <section
+          class="shell-tabpanel is-active"
+          id="product-panel"
+          role="tabpanel"
+          aria-labelledby="product-tab"
+          data-tab-panel
+        >
+          <form
+            id="generator-form"
+            hx-post="/preview"
+            hx-target="#preview-panel"
+            hx-swap="innerHTML"
+          >
+            <input type="hidden" name="parse_mode" value="product">
+            <label class="shell-label" for="source_text">商品テキスト</label>
+            <p class="shell-field-copy">これまで通り、商品一覧テキストをそのまま貼り付けて使います。</p>
+            <textarea
+              id="source_text"
+              name="source_text"
+              class="shell-textarea"
+              data-input-source
+              placeholder="ここに商品テキストを貼り付けてください"
+            >{{ initial_text }}</textarea>
+
+            <div class="shell-actions">
+              <button
+                class="shell-button"
+                type="submit"
+                data-requires-text
+                data-source-textarea="source_text"
+                disabled
+              >
+                プレビューを更新
+              </button>
+              {% with button_id="download-button-product", textarea_id="source_text", parse_mode="product", disabled=True %}
+                {% include "partials/download_button.html" %}
+              {% endwith %}
+            </div>
+          </form>
+        </section>
+
+        <section
+          class="shell-tabpanel"
+          id="mail-panel"
+          role="tabpanel"
+          aria-labelledby="mail-tab"
+          data-tab-panel
+          hidden
+        >
+          <form
+            id="mail-generator-form"
+            hx-post="/preview"
+            hx-target="#preview-panel"
+            hx-swap="innerHTML"
+          >
+            <input type="hidden" name="parse_mode" value="email">
+            <label class="shell-label" for="mail_source_text">メール内容</label>
+            <p class="shell-field-copy">
+              いまは商品テキストと同じ処理に接続しています。次の実装でメール専用フォーマットに切り替えます。
+            </p>
+            <textarea
+              id="mail_source_text"
+              name="source_text"
+              class="shell-textarea"
+              data-input-source
+              placeholder="ここにメール本文を貼り付けてください"
+            ></textarea>
+
+            <div class="shell-actions">
+              <button
+                class="shell-button"
+                type="submit"
+                data-requires-text
+                data-source-textarea="mail_source_text"
+                disabled
+              >
+                プレビューを更新
+              </button>
+              {% with button_id="download-button-mail", textarea_id="mail_source_text", parse_mode="email", disabled=True %}
+                {% include "partials/download_button.html" %}
+              {% endwith %}
+            </div>
+          </form>
+        </section>
+      </div>
     </section>
 
     <section class="shell-preview">
