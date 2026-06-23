@@ -172,6 +172,10 @@ body {
   min-height: 210px;
 }
 
+.shell-hidden {
+  display: none;
+}
+
 .shell-manual-flow {
   margin-top: 24px;
   padding-top: 22px;
@@ -298,6 +302,19 @@ body {
 }
 
 .shell-error p {
+  margin: 8px 0 0;
+}
+
+.shell-warning {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border: 1px solid #efd79c;
+  border-radius: 18px;
+  background: #fff8e8;
+  color: #7b5b12;
+}
+
+.shell-warning p {
   margin: 8px 0 0;
 }
 

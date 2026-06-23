@@ -176,7 +176,7 @@
               <input type="hidden" name="parse_mode" value="image_url">
             <label class="shell-label" for="image_url_source">画像メールURL</label>
             <p class="shell-field-copy">
-                画像メールURLから ChatGPT に渡すための結合画像を作成します。生成した画像と下のプロンプトを ChatGPT に渡し、返ってきた JSON をこの画面に貼り戻してください。
+                画像メールURLから ChatGPT に渡すための PDF を作成します。生成した PDF と下のプロンプトを ChatGPT に渡し、返ってきた JSON をこの画面に貼り戻してください。
             </p>
             <input
               id="image_url_source"
@@ -197,7 +197,7 @@
                   data-source-textarea="image_url_source"
                   data-download-endpoint="/download-chatgpt-image"
                 >
-                  ChatGPT用画像をダウンロード
+                  ChatGPT用PDFをダウンロード
                 </button>
               </div>
             </form>
@@ -205,7 +205,7 @@
             <div class="shell-manual-flow">
               <label class="shell-label" for="chatgpt_prompt">ChatGPTに渡すプロンプト</label>
               <p class="shell-field-copy">
-                下のプロンプトをコピーして、ダウンロードした画像と一緒に ChatGPT アプリへ渡してください。返答は JSON のまま次の欄へ貼り付けます。
+                下のプロンプトをコピーして、ダウンロードした PDF と一緒に ChatGPT アプリへ渡してください。返答は JSON のまま次の欄へ貼り付けます。
               </p>
               <div class="shell-actions shell-actions-tight">
                 <button
@@ -213,6 +213,7 @@
                   type="button"
                   data-copy-button
                   data-copy-target="chatgpt_prompt"
+                  disabled
                 >
                   プロンプトをコピー
                 </button>
@@ -220,8 +221,9 @@
               <textarea
                 id="chatgpt_prompt"
                 class="shell-textarea shell-textarea-compact"
-                readonly
-              >{{ chatgpt_extraction_prompt }}</textarea>
+                disabled
+              ></textarea>
+              <textarea id="chatgpt_prompt_template" class="shell-hidden">{{ chatgpt_extraction_prompt }}</textarea>
 
               <form
                 id="chatgpt-json-form"
@@ -232,6 +234,9 @@
                 hx-swap="innerHTML"
               >
                 <input type="hidden" name="parse_mode" value="chatgpt_json">
+                <input type="hidden" name="original_image_url" id="chatgpt_original_image_url">
+                <input type="hidden" name="expected_product_count" id="chatgpt_expected_product_count">
+                <input type="hidden" name="product_manifest_json" id="chatgpt_product_manifest_json">
                 <label class="shell-label" for="chatgpt_json_source">ChatGPTの返答JSON</label>
                 <textarea
                   id="chatgpt_json_source"

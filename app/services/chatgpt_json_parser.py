@@ -9,11 +9,7 @@ from app.services.amazon_link_builder import build_url
 
 
 def parse_chatgpt_json(source_text: str, affiliate_tag: str) -> list[Section]:
-    try:
-        payload = json.loads(source_text)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"ChatGPTの返答JSONを解析できませんでした: {exc.msg}") from exc
-
+    payload = load_chatgpt_json_payload(source_text)
     sections_data = _coerce_sections(payload)
     sections: list[Section] = []
     for section_data in sections_data:
@@ -29,6 +25,32 @@ def parse_chatgpt_json(source_text: str, affiliate_tag: str) -> list[Section]:
     if not sections:
         raise ValueError("ChatGPTの返答JSONから商品を抽出できませんでした。")
     return sections
+
+
+def load_chatgpt_json_payload(source_text: str) -> Any:
+    candidate = _unwrap_json_code_block(source_text)
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"ChatGPTの返答JSONを解析できませんでした: {exc.msg}") from exc
+
+
+def extract_chatgpt_item_indices(payload: Any) -> list[int]:
+    sections = _coerce_sections(payload)
+    indices: list[int] = []
+    for section in sections:
+        products = section.get("products")
+        if not isinstance(products, list):
+            continue
+        for product in products:
+            if not isinstance(product, dict):
+                continue
+            item_index = product.get("item_index")
+            if isinstance(item_index, int):
+                indices.append(item_index)
+            elif isinstance(item_index, str) and item_index.isdigit():
+                indices.append(int(item_index))
+    return indices
 
 
 def _coerce_sections(payload: Any) -> list[dict[str, Any]]:
@@ -49,9 +71,7 @@ def _ensure_dict_list(value: Any, label: str) -> list[dict[str, Any]]:
 
 
 def _build_product(data: dict[str, Any], affiliate_tag: str) -> Product:
-    title = _as_optional_string(data.get("title"))
-    if not title:
-        raise ValueError("各 product には title が必要です。")
+    title = _as_optional_string(data.get("title")) or _fallback_product_title(data)
 
     meta_lines = _as_string_list(data.get("meta_lines"))
     badges = [Badge(text=text) for text in _as_string_list(data.get("badges"))]
@@ -86,10 +106,13 @@ def _build_product(data: dict[str, Any], affiliate_tag: str) -> Product:
             )
         )
 
+    if not title and not meta_lines and not badges and not price_lines:
+        raise ValueError("product の内容が空です。")
+
     return Product(
         title=title,
-        amazon_url=build_url(title, affiliate_tag),
-        search_keyword=title,
+        amazon_url=build_url(title or "costco item", affiliate_tag),
+        search_keyword=title or "costco item",
         meta_lines=meta_lines,
         badges=badges,
         price_lines=price_lines,
@@ -110,3 +133,26 @@ def _as_string_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         raise ValueError("配列項目は文字列配列である必要があります。")
     return [str(item).strip() for item in value if str(item).strip()]
+
+
+def _fallback_product_title(data: dict[str, Any]) -> str:
+    item_index = data.get("item_index")
+    if item_index is not None:
+        return f"商品 {item_index}"
+    return "商品情報要確認"
+
+
+def _unwrap_json_code_block(source_text: str) -> str:
+    stripped = source_text.strip()
+    if not stripped.startswith("```"):
+        return stripped
+
+    lines = stripped.splitlines()
+    if len(lines) < 3:
+        return stripped
+
+    first_line = lines[0].strip().lower()
+    last_line = lines[-1].strip()
+    if first_line in {"```json", "```"} and last_line == "```":
+        return "\n".join(lines[1:-1]).strip()
+    return stripped

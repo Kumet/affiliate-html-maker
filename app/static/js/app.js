@@ -4,6 +4,10 @@ function initApp() {
   const tabs = document.querySelectorAll("[data-tab-target]");
   const tabPanels = document.querySelectorAll("[data-tab-panel]");
   const previewStatus = document.querySelector("[data-preview-status]");
+  const chatgptPrompt = document.getElementById("chatgpt_prompt");
+  const chatgptPromptTemplate = document.getElementById("chatgpt_prompt_template");
+  const chatgptExpectedProductCount = document.getElementById("chatgpt_expected_product_count");
+  const chatgptProductManifest = document.getElementById("chatgpt_product_manifest_json");
   let activeRequestCount = 0;
 
   function syncActionState() {
@@ -64,6 +68,8 @@ function initApp() {
     const form = document.createElement("form");
     const field = document.createElement("textarea");
     const parseModeField = document.createElement("input");
+    const originalImageUrlField = document.createElement("input");
+    const originalImageUrlSource = document.getElementById("image_url_source");
 
     form.method = "post";
     form.action = "/download";
@@ -74,15 +80,21 @@ function initApp() {
     parseModeField.type = "hidden";
     parseModeField.name = "parse_mode";
     parseModeField.value = parseMode || "product";
+    originalImageUrlField.type = "hidden";
+    originalImageUrlField.name = "original_image_url";
+    if (originalImageUrlSource instanceof HTMLInputElement) {
+      originalImageUrlField.value = originalImageUrlSource.value;
+    }
 
     form.appendChild(field);
     form.appendChild(parseModeField);
+    form.appendChild(originalImageUrlField);
     document.body.appendChild(form);
     form.submit();
     document.body.removeChild(form);
   }
 
-  function submitRawDownload(textareaId, endpoint) {
+  async function submitRawDownload(textareaId, endpoint) {
     const sourceTextarea = textareaId ? document.getElementById(textareaId) : null;
     if (
       !(
@@ -94,19 +106,54 @@ function initApp() {
       return;
     }
 
-    const form = document.createElement("form");
-    const field = document.createElement("textarea");
+    const formData = new FormData();
+    formData.append("source_text", sourceTextarea.value);
+    const response = await fetch(endpoint, { method: "POST", body: formData });
+    if (!response.ok) {
+      setPreviewStatus("ChatGPT用PDFの生成に失敗しました", "error");
+      return;
+    }
 
-    form.method = "post";
-    form.action = endpoint;
-    form.style.display = "none";
+    const blob = await response.blob();
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const fileNameMatch = disposition.match(/filename="([^"]+)"/);
+    const fileName = fileNameMatch ? fileNameMatch[1] : "chatgpt_bundle.pdf";
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(objectUrl);
 
-    field.name = "source_text";
-    field.value = sourceTextarea.value;
-    form.appendChild(field);
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
+    const expectedProducts = response.headers.get("X-Expected-Products") || "";
+    const manifestBase64 = response.headers.get("X-Product-Manifest") || "";
+    let manifestJson = "[]";
+    if (manifestBase64) {
+      const binary = atob(manifestBase64);
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      manifestJson = new TextDecoder("utf-8").decode(bytes);
+    }
+
+    if (
+      chatgptPrompt instanceof HTMLTextAreaElement
+      && chatgptPromptTemplate instanceof HTMLTextAreaElement
+    ) {
+      chatgptPrompt.disabled = false;
+      chatgptPrompt.value = `${chatgptPromptTemplate.value}\n\n追加条件:\n- このPDFの想定商品数は ${expectedProducts} 件です\n- products 配列には必ず ${expectedProducts} 件分の JSON を返す\n- 情報が欠けていても item_index を維持して商品を削除しない`;
+    }
+    if (chatgptExpectedProductCount instanceof HTMLInputElement) {
+      chatgptExpectedProductCount.value = expectedProducts;
+    }
+    if (chatgptProductManifest instanceof HTMLInputElement) {
+      chatgptProductManifest.value = manifestJson;
+    }
+
+    document.querySelectorAll("[data-copy-button]").forEach((button) => {
+      button.removeAttribute("disabled");
+    });
+    setPreviewStatus("ChatGPT用PDFを生成しました", "success");
   }
 
   async function copyTextFromTarget(targetId) {
@@ -129,6 +176,15 @@ function initApp() {
   sourceTextareas.forEach((textarea) => {
     textarea.addEventListener("input", syncActionState);
   });
+  const imageUrlSource = document.getElementById("image_url_source");
+  const originalImageUrlField = document.getElementById("chatgpt_original_image_url");
+  if (imageUrlSource instanceof HTMLInputElement && originalImageUrlField instanceof HTMLInputElement) {
+    const syncOriginalImageUrl = () => {
+      originalImageUrlField.value = imageUrlSource.value;
+    };
+    imageUrlSource.addEventListener("input", syncOriginalImageUrl);
+    syncOriginalImageUrl();
+  }
   syncActionState();
 
   tabs.forEach((tab) => {
@@ -155,14 +211,14 @@ function initApp() {
     );
   });
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement) || !target.hasAttribute("data-download-image-button")) {
       return;
     }
 
     event.preventDefault();
-    submitRawDownload(
+    await submitRawDownload(
       target.getAttribute("data-source-textarea"),
       target.getAttribute("data-download-endpoint") || "/download-chatgpt-image"
     );

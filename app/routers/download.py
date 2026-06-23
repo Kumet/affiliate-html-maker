@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 from datetime import date
 
 from fastapi import APIRouter, Form
@@ -49,5 +50,9 @@ async def download_chatgpt_image(source_text: str = Form(...)) -> Response:
     return Response(
         content=bundle.content,
         media_type=bundle.media_type,
-        headers={"Content-Disposition": f'attachment; filename="{bundle.filename}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{bundle.filename}"',
+            "X-Expected-Products": str(bundle.product_count),
+            "X-Product-Manifest": base64.b64encode(bundle.product_manifest_json.encode("utf-8")).decode("ascii"),
+        },
     )

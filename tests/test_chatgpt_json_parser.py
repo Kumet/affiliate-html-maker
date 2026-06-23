@@ -58,3 +58,29 @@ def test_parse_chatgpt_json_accepts_sale_price_aliases() -> None:
     price_line = sections[0].products[0].price_lines[0]
     assert price_line.value == "¥2,998"
     assert price_line.discounted_value == "¥2,258"
+
+
+def test_parse_chatgpt_json_accepts_markdown_code_block() -> None:
+    payload = """
+    ```json
+    {
+      "sections": [
+        {
+          "title": "P&G FOCUS",
+          "products": [
+            {
+              "item_index": 1,
+              "title": "アリエール ジェルボールプロ",
+              "original_price": "¥2,998",
+              "discounted_price": "¥2,258"
+            }
+          ]
+        }
+      ]
+    }
+    ```
+    """
+
+    sections = parse_chatgpt_json(payload, "costco-item-22")
+
+    assert sections[0].products[0].title == "アリエール ジェルボールプロ"

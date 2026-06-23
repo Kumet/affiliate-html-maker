@@ -76,6 +76,41 @@ def test_chatgpt_json_preview_endpoint_returns_fragment(client) -> None:
     assert "¥2,258" in response.text
 
 
+def test_chatgpt_json_preview_warns_when_product_count_is_low(client, monkeypatch) -> None:
+    payload = """
+    {
+      "total_products": 1,
+      "sections": [
+        {
+          "title": "P&G FOCUS",
+          "products": [
+            {
+              "item_index": 1,
+              "title": "アリエール ジェルボールプロ",
+              "original_price": "¥2,998",
+              "discounted_price": "¥2,258"
+            }
+          ]
+        }
+      ]
+    }
+    """
+
+    monkeypatch.setattr("app.routers.htmx.estimate_image_mail_product_count", lambda _url: 3)
+    response = client.post(
+        "/preview",
+        data={
+            "source_text": payload,
+            "parse_mode": "chatgpt_json",
+            "original_image_url": "https://example.com/mail.html",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "商品数が不足している可能性があります" in response.text
+    assert "想定商品数は 3 件" in response.text
+
+
 def test_chatgpt_json_download_endpoint_returns_attachment(client) -> None:
     payload = """
     {
@@ -98,6 +133,28 @@ def test_chatgpt_json_download_endpoint_returns_attachment(client) -> None:
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
     assert response.text.lower().startswith("<!doctype html>")
+
+
+def test_chatgpt_pdf_download_endpoint_returns_attachment(client, monkeypatch) -> None:
+    from app.services.chatgpt_image_bundle import ChatGptImageBundle
+
+    monkeypatch.setattr(
+        "app.routers.download.build_chatgpt_image_bundle",
+        lambda _url: ChatGptImageBundle(
+            filename="sample_chatgpt_bundle.pdf",
+            media_type="application/pdf",
+            content=b"%PDF-1.4\n%",
+            product_count=3,
+            product_manifest_json='[{"item_index":1,"image_names":["s1.jpg"]}]',
+        ),
+    )
+
+    response = client.post("/download-chatgpt-image", data={"source_text": "https://example.com/mail.html"})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/pdf")
+    assert response.headers["content-disposition"] == 'attachment; filename="sample_chatgpt_bundle.pdf"'
+    assert response.headers["x-expected-products"] == "3"
 
 
 def test_email_preview_endpoint_returns_fragment(client) -> None:
