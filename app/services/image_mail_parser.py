@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import tempfile
 import urllib.parse
 import urllib.request
@@ -137,7 +138,7 @@ def _ocr_and_parse_product(entry: ProductImageGroup, affiliate_tag: str, api_key
 
 @lru_cache(maxsize=256)
 def _ocr_image_url(image_url: str, api_key: str) -> str:
-    if api_key == "helloworld":
+    if api_key == "helloworld" and _local_ocr_available():
         return _ocr_image_url_local(image_url)
 
     params = urllib.parse.urlencode(
@@ -155,23 +156,34 @@ def _ocr_image_url(image_url: str, api_key: str) -> str:
         with urllib.request.urlopen(request_url, timeout=90) as response:
             data = json.loads(response.read().decode("utf-8"))
     except Exception:
+        if not _local_ocr_available():
+            raise ValueError("OCR APIに接続できず、ローカルOCRも利用できませんでした。")
         return _ocr_image_url_local(image_url)
 
     if data.get("IsErroredOnProcessing"):
+        if not _local_ocr_available():
+            raise ValueError("OCR APIで画像を解析できず、ローカルOCRも利用できませんでした。")
         return _ocr_image_url_local(image_url)
 
     parsed_results = data.get("ParsedResults") or []
     if not parsed_results:
+        if not _local_ocr_available():
+            raise ValueError("OCR結果が空で、ローカルOCRも利用できませんでした。")
         raise ValueError("OCR結果が空でした。")
 
     parsed_text = parsed_results[0].get("ParsedText", "").strip()
     if not parsed_text:
+        if not _local_ocr_available():
+            raise ValueError("OCR結果が空で、ローカルOCRも利用できませんでした。")
         return _ocr_image_url_local(image_url)
     return parsed_text
 
 
 @lru_cache(maxsize=256)
 def _ocr_image_url_local(image_url: str) -> str:
+    if not _local_ocr_available():
+        raise ValueError("ローカルOCRを実行できません。tesseract が見つかりませんでした。")
+
     try:
         with urllib.request.urlopen(image_url, timeout=60) as response:
             image_bytes = response.read()
@@ -190,6 +202,10 @@ def _ocr_image_url_local(image_url: str) -> str:
     if not text.strip():
         raise ValueError("ローカルOCRでもテキストを抽出できませんでした。")
     return text
+
+
+def _local_ocr_available() -> bool:
+    return shutil.which("tesseract") is not None
 
 
 def _parse_ocr_product_text(ocr_text: str, image_url: str, affiliate_tag: str) -> Product:
