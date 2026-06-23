@@ -57,6 +57,13 @@ def parse_image_mail_url(url: str, affiliate_tag: str, api_key: str) -> list[Sec
     return parsed_sections
 
 
+@lru_cache(maxsize=32)
+def estimate_image_mail_product_count(url: str) -> int:
+    html = _fetch_html(url)
+    entries = _extract_image_entries(html)
+    return len(_collect_product_entries(entries))
+
+
 def _fetch_html(url: str) -> str:
     try:
         with urllib.request.urlopen(url, timeout=60) as response:
@@ -86,33 +93,7 @@ def _build_sections_from_images(
     current_section = Section()
     sections.append(current_section)
 
-    product_entries: list[tuple[Section, ProductImageGroup]] = []
-    pending_section = current_section
-    pending_group: ProductImageGroup | None = None
-    for entry in entries:
-        if SECTION_IMAGE_RE.search(entry.src):
-            if pending_group is not None:
-                product_entries.append((pending_section, pending_group))
-                pending_group = None
-            title = entry.alt or None
-            if title:
-                current_section = Section(title=title)
-                sections.append(current_section)
-                pending_section = current_section
-            continue
-        if PRODUCT_IMAGE_RE.search(entry.src):
-            if pending_group is None:
-                pending_group = ProductImageGroup(srcs=(entry.src,), alt=entry.alt)
-                pending_section = current_section
-            elif _image_group_key(pending_group.srcs[-1]) == _image_group_key(entry.src):
-                pending_group = ProductImageGroup(srcs=(*pending_group.srcs, entry.src), alt=entry.alt)
-            else:
-                product_entries.append((pending_section, pending_group))
-                pending_group = ProductImageGroup(srcs=(entry.src,), alt=entry.alt)
-                pending_section = current_section
-
-    if pending_group is not None:
-        product_entries.append((pending_section, pending_group))
+    product_entries = _collect_product_entries(entries, sections)
 
     if not product_entries:
         raise ValueError("商品画像が見つかりませんでした。")
@@ -129,6 +110,43 @@ def _build_sections_from_images(
         section.products.append(product)
 
     return sections
+
+
+def _collect_product_entries(
+    entries: list[ImageEntry], sections: list[Section] | None = None
+) -> list[tuple[Section, ProductImageGroup]]:
+    current_section = sections[-1] if sections else Section()
+    product_entries: list[tuple[Section, ProductImageGroup]] = []
+    pending_section = current_section
+    pending_group: ProductImageGroup | None = None
+
+    for entry in entries:
+        if SECTION_IMAGE_RE.search(entry.src):
+            if pending_group is not None:
+                product_entries.append((pending_section, pending_group))
+                pending_group = None
+            title = entry.alt or None
+            if title:
+                current_section = Section(title=title)
+                if sections is not None:
+                    sections.append(current_section)
+                pending_section = current_section
+            continue
+        if PRODUCT_IMAGE_RE.search(entry.src):
+            if pending_group is None:
+                pending_group = ProductImageGroup(srcs=(entry.src,), alt=entry.alt)
+                pending_section = current_section
+            elif _image_group_key(pending_group.srcs[-1]) == _image_group_key(entry.src):
+                pending_group = ProductImageGroup(srcs=(*pending_group.srcs, entry.src), alt=entry.alt)
+            else:
+                product_entries.append((pending_section, pending_group))
+                pending_group = ProductImageGroup(srcs=(entry.src,), alt=entry.alt)
+                pending_section = current_section
+
+    if pending_group is not None:
+        product_entries.append((pending_section, pending_group))
+
+    return product_entries
 
 
 def _ocr_and_parse_product(entry: ProductImageGroup, affiliate_tag: str, api_key: str) -> Product:
