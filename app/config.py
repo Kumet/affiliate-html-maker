@@ -26,10 +26,19 @@ class Settings:
     app_name: str
     affiliate_tag: str
     ocr_space_api_key: str
+    enable_image_url_mode: bool
+    inline_assets_mode: bool
     template_dir: Path
     static_dir: Path
     sample_input_path: Path
     section_keywords: tuple[str, ...]
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 @lru_cache(maxsize=1)
@@ -40,6 +49,8 @@ def get_settings() -> Settings:
         app_name=os.getenv("APP_NAME", "Affiliate HTML Maker"),
         affiliate_tag=os.getenv("AFFILIATE_TAG", "costco-item-22"),
         ocr_space_api_key=os.getenv("OCR_SPACE_API_KEY", "helloworld"),
+        enable_image_url_mode=_env_flag("ENABLE_IMAGE_URL_MODE", True),
+        inline_assets_mode=_env_flag("INLINE_ASSETS_MODE", False),
         template_dir=PROJECT_ROOT / "app" / "templates",
         static_dir=PROJECT_ROOT / "app" / "static",
         sample_input_path=PROJECT_ROOT / "sample" / "sample_info.txt",

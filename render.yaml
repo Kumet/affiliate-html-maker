@@ -13,3 +13,7 @@ services:
         value: costco-item-22
       - key: OCR_SPACE_API_KEY
         value: helloworld
+      - key: ENABLE_IMAGE_URL_MODE
+        value: false
+      - key: INLINE_ASSETS_MODE
+        value: true

@@ -15,10 +15,12 @@ router = APIRouter()
 @router.post("/preview", response_class=HTMLResponse)
 async def preview(source_text: str = Form(...), parse_mode: str = Form("product")) -> HTMLResponse:
     try:
+        settings = get_settings()
         if parse_mode == "email":
-            sections = parse_email_text(source_text, get_settings().affiliate_tag)
+            sections = parse_email_text(source_text, settings.affiliate_tag)
         elif parse_mode == "image_url":
-            settings = get_settings()
+            if not settings.enable_image_url_mode:
+                raise ValueError("この環境では画像メールURL機能は無効です。")
             sections = parse_image_mail_url(
                 source_text.strip(),
                 settings.affiliate_tag,

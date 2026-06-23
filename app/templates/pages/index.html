@@ -4,11 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ app_name }}</title>
-  <link rel="stylesheet" href="/static/css/app.css">
+  {% if inline_assets_mode %}
   <style>{{ inline_css | safe }}</style>
+  {% else %}
+  <link rel="stylesheet" href="/static/css/app.css">
+  {% endif %}
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <script defer src="/static/js/app.js"></script>
+  {% if inline_assets_mode %}
   <script defer>{{ inline_js | safe }}</script>
+  {% else %}
+  <script defer src="/static/js/app.js"></script>
+  {% endif %}
 </head>
 <body>
   <main class="shell">
@@ -44,17 +50,19 @@
         >
           メール内容
         </button>
-        <button
-          class="shell-tab"
-          type="button"
-          role="tab"
-          aria-selected="false"
-          aria-controls="image-url-panel"
-          id="image-url-tab"
-          data-tab-target="image-url-panel"
-        >
-          画像メールURL
-        </button>
+        {% if enable_image_url_mode %}
+          <button
+            class="shell-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="image-url-panel"
+            id="image-url-tab"
+            data-tab-target="image-url-panel"
+          >
+            画像メールURL
+          </button>
+        {% endif %}
         </div>
       </div>
 
@@ -148,53 +156,55 @@
           </form>
         </section>
 
-        <section
-          class="shell-tabpanel"
-          id="image-url-panel"
-          role="tabpanel"
-          aria-labelledby="image-url-tab"
-          data-tab-panel
-          hidden
-        >
-          <form
-            id="image-url-generator-form"
-            action="/preview"
-            method="post"
-            hx-post="/preview"
-            hx-target="#preview-panel"
-            hx-swap="innerHTML"
+        {% if enable_image_url_mode %}
+          <section
+            class="shell-tabpanel"
+            id="image-url-panel"
+            role="tabpanel"
+            aria-labelledby="image-url-tab"
+            data-tab-panel
+            hidden
           >
-            <input type="hidden" name="parse_mode" value="image_url">
-            <label class="shell-label" for="image_url_source">画像メールURL</label>
-            <p class="shell-field-copy">
-              Costco の画像メールURLを入力すると、HTMLから商品画像を抽出してOCRし、同じカード形式でプレビューします。
-            </p>
-            <input
-              id="image_url_source"
-              name="source_text"
-              class="shell-input"
-              type="url"
-              data-input-source
-              inputmode="url"
-              placeholder="https://cds2.costcojapan.jp/.../pc_index.html"
-            />
+            <form
+              id="image-url-generator-form"
+              action="/preview"
+              method="post"
+              hx-post="/preview"
+              hx-target="#preview-panel"
+              hx-swap="innerHTML"
+            >
+              <input type="hidden" name="parse_mode" value="image_url">
+              <label class="shell-label" for="image_url_source">画像メールURL</label>
+              <p class="shell-field-copy">
+                Costco の画像メールURLを入力すると、HTMLから商品画像を抽出してOCRし、同じカード形式でプレビューします。
+              </p>
+              <input
+                id="image_url_source"
+                name="source_text"
+                class="shell-input"
+                type="url"
+                data-input-source
+                inputmode="url"
+                placeholder="https://cds2.costcojapan.jp/.../pc_index.html"
+              />
 
-            <div class="shell-actions">
-              <button
-                class="shell-button"
-                type="submit"
-                data-requires-text
-                data-source-textarea="image_url_source"
-                disabled
-              >
-                プレビューを更新
-              </button>
-              {% with button_id="download-button-image-url", textarea_id="image_url_source", parse_mode="image_url", disabled=True %}
-                {% include "partials/download_button.html" %}
-              {% endwith %}
-            </div>
-          </form>
-        </section>
+              <div class="shell-actions">
+                <button
+                  class="shell-button"
+                  type="submit"
+                  data-requires-text
+                  data-source-textarea="image_url_source"
+                  disabled
+                >
+                  プレビューを更新
+                </button>
+                {% with button_id="download-button-image-url", textarea_id="image_url_source", parse_mode="image_url", disabled=True %}
+                  {% include "partials/download_button.html" %}
+                {% endwith %}
+              </div>
+            </form>
+          </section>
+        {% endif %}
       </div>
     </section>
 

@@ -11,11 +11,14 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
+    settings = get_settings()
     html = render_template(
         "pages/index.html",
-        app_name=get_settings().app_name,
+        app_name=settings.app_name,
         initial_text=load_initial_text(),
-        inline_css=load_static_asset("css/app.css"),
-        inline_js=load_static_asset("js/app.js"),
+        enable_image_url_mode=settings.enable_image_url_mode,
+        inline_assets_mode=settings.inline_assets_mode,
+        inline_css=load_static_asset("css/app.css") if settings.inline_assets_mode else "",
+        inline_js=load_static_asset("js/app.js") if settings.inline_assets_mode else "",
     )
     return HTMLResponse(content=html)
