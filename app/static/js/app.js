@@ -82,6 +82,50 @@ function initApp() {
     document.body.removeChild(form);
   }
 
+  function submitRawDownload(textareaId, endpoint) {
+    const sourceTextarea = textareaId ? document.getElementById(textareaId) : null;
+    if (
+      !(
+        sourceTextarea instanceof HTMLTextAreaElement
+        || sourceTextarea instanceof HTMLInputElement
+      )
+      || !sourceTextarea.value.trim()
+    ) {
+      return;
+    }
+
+    const form = document.createElement("form");
+    const field = document.createElement("textarea");
+
+    form.method = "post";
+    form.action = endpoint;
+    form.style.display = "none";
+
+    field.name = "source_text";
+    field.value = sourceTextarea.value;
+    form.appendChild(field);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+  }
+
+  async function copyTextFromTarget(targetId) {
+    const source = targetId ? document.getElementById(targetId) : null;
+    if (!(source instanceof HTMLTextAreaElement || source instanceof HTMLInputElement)) {
+      return false;
+    }
+
+    source.focus();
+    source.select();
+
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(source.value);
+      return true;
+    }
+
+    return document.execCommand("copy");
+  }
+
   sourceTextareas.forEach((textarea) => {
     textarea.addEventListener("input", syncActionState);
   });
@@ -109,6 +153,34 @@ function initApp() {
       target.getAttribute("data-source-textarea"),
       target.getAttribute("data-parse-mode")
     );
+  });
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || !target.hasAttribute("data-download-image-button")) {
+      return;
+    }
+
+    event.preventDefault();
+    submitRawDownload(
+      target.getAttribute("data-source-textarea"),
+      target.getAttribute("data-download-endpoint") || "/download-chatgpt-image"
+    );
+  });
+
+  document.addEventListener("click", async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || !target.hasAttribute("data-copy-button")) {
+      return;
+    }
+
+    event.preventDefault();
+    const originalText = target.textContent || "";
+    const copied = await copyTextFromTarget(target.getAttribute("data-copy-target"));
+    target.textContent = copied ? "コピーしました" : "コピー失敗";
+    window.setTimeout(() => {
+      target.textContent = originalText;
+    }, 1600);
   });
 
   document.body.addEventListener("htmx:beforeRequest", (event) => {

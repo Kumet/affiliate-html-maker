@@ -174,14 +174,14 @@
               hx-swap="innerHTML"
             >
               <input type="hidden" name="parse_mode" value="image_url">
-              <label class="shell-label" for="image_url_source">画像メールURL</label>
-              <p class="shell-field-copy">
-                Costco の画像メールURLを入力すると、HTMLから商品画像を抽出してOCRし、同じカード形式でプレビューします。
-              </p>
-              <input
-                id="image_url_source"
-                name="source_text"
-                class="shell-input"
+            <label class="shell-label" for="image_url_source">画像メールURL</label>
+            <p class="shell-field-copy">
+                画像メールURLから ChatGPT に渡すための結合画像を作成します。生成した画像と下のプロンプトを ChatGPT に渡し、返ってきた JSON をこの画面に貼り戻してください。
+            </p>
+            <input
+              id="image_url_source"
+              name="source_text"
+              class="shell-input"
                 type="url"
                 data-input-source
                 inputmode="url"
@@ -190,19 +190,73 @@
 
               <div class="shell-actions">
                 <button
-                  class="shell-button"
-                  type="submit"
+                  class="shell-button shell-button-secondary"
+                  type="button"
+                  data-download-image-button
                   data-requires-text
                   data-source-textarea="image_url_source"
-                  disabled
+                  data-download-endpoint="/download-chatgpt-image"
                 >
-                  プレビューを更新
+                  ChatGPT用画像をダウンロード
                 </button>
-                {% with button_id="download-button-image-url", textarea_id="image_url_source", parse_mode="image_url", disabled=True %}
-                  {% include "partials/download_button.html" %}
-                {% endwith %}
               </div>
             </form>
+
+            <div class="shell-manual-flow">
+              <label class="shell-label" for="chatgpt_prompt">ChatGPTに渡すプロンプト</label>
+              <p class="shell-field-copy">
+                下のプロンプトをコピーして、ダウンロードした画像と一緒に ChatGPT アプリへ渡してください。返答は JSON のまま次の欄へ貼り付けます。
+              </p>
+              <div class="shell-actions shell-actions-tight">
+                <button
+                  class="shell-button shell-button-secondary"
+                  type="button"
+                  data-copy-button
+                  data-copy-target="chatgpt_prompt"
+                >
+                  プロンプトをコピー
+                </button>
+              </div>
+              <textarea
+                id="chatgpt_prompt"
+                class="shell-textarea shell-textarea-compact"
+                readonly
+              >{{ chatgpt_extraction_prompt }}</textarea>
+
+              <form
+                id="chatgpt-json-form"
+                action="/preview"
+                method="post"
+                hx-post="/preview"
+                hx-target="#preview-panel"
+                hx-swap="innerHTML"
+              >
+                <input type="hidden" name="parse_mode" value="chatgpt_json">
+                <label class="shell-label" for="chatgpt_json_source">ChatGPTの返答JSON</label>
+                <textarea
+                  id="chatgpt_json_source"
+                  name="source_text"
+                  class="shell-textarea"
+                  data-input-source
+                  placeholder='{"sections":[...]}'
+                ></textarea>
+
+                <div class="shell-actions">
+                  <button
+                    class="shell-button"
+                    type="submit"
+                    data-requires-text
+                    data-source-textarea="chatgpt_json_source"
+                    disabled
+                  >
+                    JSONからプレビューを更新
+                  </button>
+                  {% with button_id="download-button-chatgpt-json", textarea_id="chatgpt_json_source", parse_mode="chatgpt_json", disabled=True %}
+                    {% include "partials/download_button.html" %}
+                  {% endwith %}
+                </div>
+              </form>
+            </div>
           </section>
         {% endif %}
       </div>

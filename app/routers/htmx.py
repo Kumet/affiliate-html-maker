@@ -4,6 +4,7 @@ from fastapi import APIRouter, Form
 from fastapi.responses import HTMLResponse
 
 from app.config import get_settings
+from app.services.chatgpt_json_parser import parse_chatgpt_json
 from app.services.email_parser import parse_email_text
 from app.services.html_builder import build_preview_html, render_template
 from app.services.image_mail_parser import parse_image_mail_url
@@ -18,6 +19,8 @@ async def preview(source_text: str = Form(...), parse_mode: str = Form("product"
         settings = get_settings()
         if parse_mode == "email":
             sections = parse_email_text(source_text, settings.affiliate_tag)
+        elif parse_mode == "chatgpt_json":
+            sections = parse_chatgpt_json(source_text, settings.affiliate_tag)
         elif parse_mode == "image_url":
             if not settings.enable_image_url_mode:
                 raise ValueError("この環境では画像メールURL機能は無効です。")

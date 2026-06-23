@@ -168,6 +168,16 @@ body {
   background: #fffdfa;
 }
 
+.shell-textarea-compact {
+  min-height: 210px;
+}
+
+.shell-manual-flow {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(217, 223, 215, 0.9);
+}
+
 .shell-textarea:focus,
 .shell-input:focus {
   outline: 3px solid rgba(15, 139, 109, 0.15);
@@ -180,6 +190,11 @@ body {
   flex-wrap: wrap;
   align-items: center;
   margin-top: 18px;
+}
+
+.shell-actions-tight {
+  margin-top: 0;
+  margin-bottom: 12px;
 }
 
 .shell-button {

@@ -47,6 +47,59 @@ def test_download_endpoint_returns_attachment(client, sample_text: str) -> None:
     assert response.text.lower().startswith("<!doctype html>")
 
 
+def test_chatgpt_json_preview_endpoint_returns_fragment(client) -> None:
+    payload = """
+    {
+      "sections": [
+        {
+          "title": "P&G FOCUS",
+          "products": [
+            {
+              "title": "アリエール ジェルボールプロ",
+              "meta_lines": ["部屋干し用", "110個入"],
+              "badges": ["特価"],
+              "date_badge": "～6/28",
+              "price": "¥2,998",
+              "discounted_price": "¥2,258",
+              "notes": ["ITEM #87700"]
+            }
+          ]
+        }
+      ]
+    }
+    """
+
+    response = client.post("/preview", data={"source_text": payload, "parse_mode": "chatgpt_json"})
+
+    assert response.status_code == 200
+    assert "アリエール ジェルボールプロ" in response.text
+    assert "¥2,258" in response.text
+
+
+def test_chatgpt_json_download_endpoint_returns_attachment(client) -> None:
+    payload = """
+    {
+      "sections": [
+        {
+          "title": "P&G FOCUS",
+          "products": [
+            {
+              "title": "アリエール ジェルボールプロ",
+              "price": "¥2,998"
+            }
+          ]
+        }
+      ]
+    }
+    """
+
+    response = client.post("/download", data={"source_text": payload, "parse_mode": "chatgpt_json"})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert response.text.lower().startswith("<!doctype html>")
+
+
 def test_email_preview_endpoint_returns_fragment(client) -> None:
     source_text = (
         "SOJAG LITO サンシェルター 3m x 3.6m ガゼボ\trècolte スライドラックトースター\n"
