@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse
 from app.config import get_settings
 from app.services.email_parser import parse_email_text
 from app.services.html_builder import build_download_html
+from app.services.image_mail_parser import parse_image_mail_url
 from app.services.text_parser import parse_text
 
 router = APIRouter()
@@ -17,6 +18,13 @@ router = APIRouter()
 async def download(source_text: str = Form(...), parse_mode: str = Form("product")) -> HTMLResponse:
     if parse_mode == "email":
         sections = parse_email_text(source_text, get_settings().affiliate_tag)
+    elif parse_mode == "image_url":
+        settings = get_settings()
+        sections = parse_image_mail_url(
+            source_text.strip(),
+            settings.affiliate_tag,
+            settings.ocr_space_api_key,
+        )
     else:
         sections = parse_text(source_text)
     filename = f"affiliate_{date.today().strftime('%Y%m%d')}.html"

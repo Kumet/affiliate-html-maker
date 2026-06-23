@@ -2,12 +2,17 @@ const sourceTextareas = document.querySelectorAll("[data-input-source]");
 const interactiveButtons = document.querySelectorAll("[data-requires-text]");
 const tabs = document.querySelectorAll("[data-tab-target]");
 const tabPanels = document.querySelectorAll("[data-tab-panel]");
+const previewStatus = document.querySelector("[data-preview-status]");
+let activeRequestCount = 0;
 
 function syncActionState() {
   interactiveButtons.forEach((button) => {
     const textareaId = button.getAttribute("data-source-textarea");
     const textarea = textareaId ? document.getElementById(textareaId) : null;
-    const hasText = Boolean(textarea instanceof HTMLTextAreaElement && textarea.value.trim());
+    const hasText = Boolean(
+      (textarea instanceof HTMLTextAreaElement || textarea instanceof HTMLInputElement)
+      && textarea.value.trim()
+    );
     button.disabled = !hasText;
   });
 }
@@ -16,6 +21,23 @@ sourceTextareas.forEach((textarea) => {
   textarea.addEventListener("input", syncActionState);
 });
 syncActionState();
+
+function setPreviewStatus(message, state = "idle") {
+  if (!(previewStatus instanceof HTMLElement)) {
+    return;
+  }
+
+  previewStatus.textContent = message;
+  previewStatus.classList.remove("is-loading", "is-success", "is-error");
+
+  if (state === "loading") {
+    previewStatus.classList.add("is-loading");
+  } else if (state === "success") {
+    previewStatus.classList.add("is-success");
+  } else if (state === "error") {
+    previewStatus.classList.add("is-error");
+  }
+}
 
 function activateTab(targetId) {
   tabs.forEach((tab) => {
@@ -44,7 +66,13 @@ tabs.forEach((tab) => {
 
 function submitDownload(textareaId, parseMode) {
   const sourceTextarea = textareaId ? document.getElementById(textareaId) : null;
-  if (!(sourceTextarea instanceof HTMLTextAreaElement) || !sourceTextarea.value.trim()) {
+  if (
+    !(
+      sourceTextarea instanceof HTMLTextAreaElement
+      || sourceTextarea instanceof HTMLInputElement
+    )
+    || !sourceTextarea.value.trim()
+  ) {
     return;
   }
 
@@ -80,4 +108,43 @@ document.addEventListener("click", (event) => {
     target.getAttribute("data-source-textarea"),
     target.getAttribute("data-parse-mode")
   );
+});
+
+document.body.addEventListener("htmx:beforeRequest", (event) => {
+  const target = event.detail.target;
+  if (!(target instanceof HTMLElement) || target.id !== "preview-panel") {
+    return;
+  }
+
+  activeRequestCount += 1;
+  setPreviewStatus("プレビューを生成中です", "loading");
+});
+
+document.body.addEventListener("htmx:afterRequest", (event) => {
+  const target = event.detail.target;
+  if (!(target instanceof HTMLElement) || target.id !== "preview-panel") {
+    return;
+  }
+
+  activeRequestCount = Math.max(0, activeRequestCount - 1);
+  if (activeRequestCount > 0) {
+    return;
+  }
+
+  if (event.detail.successful) {
+    setPreviewStatus("プレビューを更新しました", "success");
+    return;
+  }
+
+  setPreviewStatus("プレビューの生成に失敗しました", "error");
+});
+
+document.body.addEventListener("htmx:responseError", (event) => {
+  const target = event.detail.target;
+  if (!(target instanceof HTMLElement) || target.id !== "preview-panel") {
+    return;
+  }
+
+  activeRequestCount = 0;
+  setPreviewStatus("プレビューの生成に失敗しました", "error");
 });

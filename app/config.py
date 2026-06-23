@@ -25,6 +25,7 @@ def _load_dotenv(path: Path) -> None:
 class Settings:
     app_name: str
     affiliate_tag: str
+    ocr_space_api_key: str
     template_dir: Path
     static_dir: Path
     sample_input_path: Path
@@ -38,6 +39,7 @@ def get_settings() -> Settings:
     return Settings(
         app_name=os.getenv("APP_NAME", "Affiliate HTML Maker"),
         affiliate_tag=os.getenv("AFFILIATE_TAG", "costco-item-22"),
+        ocr_space_api_key=os.getenv("OCR_SPACE_API_KEY", "helloworld"),
         template_dir=PROJECT_ROOT / "app" / "templates",
         static_dir=PROJECT_ROOT / "app" / "static",
         sample_input_path=PROJECT_ROOT / "sample" / "sample_info.txt",

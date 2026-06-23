@@ -30,8 +30,10 @@ def test_index_page_contains_both_input_tabs(client) -> None:
     assert response.status_code == 200
     assert "商品テキスト" in response.text
     assert "メール内容" in response.text
+    assert "画像メールURL" in response.text
     assert 'id="source_text"' in response.text
     assert 'id="mail_source_text"' in response.text
+    assert 'id="image_url_source"' in response.text
 
 
 def test_download_endpoint_returns_attachment(client, sample_text: str) -> None:

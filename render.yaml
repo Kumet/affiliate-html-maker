@@ -3,7 +3,7 @@ services:
     name: affiliate-html-maker
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: apt-get update && apt-get install -y tesseract-ocr tesseract-ocr-jpn && pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     autoDeploy: true
     envVars:
@@ -11,3 +11,5 @@ services:
         value: Affiliate HTML Maker
       - key: AFFILIATE_TAG
         value: costco-item-22
+      - key: OCR_SPACE_API_KEY
+        value: helloworld
