@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
 from app.config import get_settings
-from app.services.html_builder import load_initial_text, render_template
+from app.services.html_builder import load_initial_text, load_static_asset, render_template
 
 router = APIRouter()
 
@@ -15,5 +15,7 @@ async def index() -> HTMLResponse:
         "pages/index.html",
         app_name=get_settings().app_name,
         initial_text=load_initial_text(),
+        inline_css=load_static_asset("css/app.css"),
+        inline_js=load_static_asset("js/app.js"),
     )
     return HTMLResponse(content=html)

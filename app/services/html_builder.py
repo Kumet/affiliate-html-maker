@@ -50,6 +50,11 @@ def render_template(template_name: str, **context: object) -> str:
     return template.render(**context)
 
 
+def load_static_asset(relative_path: str) -> str:
+    asset_path = get_settings().static_dir / relative_path
+    return asset_path.read_text(encoding="utf-8")
+
+
 def build_preview_html(sections: list[Section]) -> str:
     return render_template("partials/preview.html", sections=sections, card_styles=CARD_STYLES)
 
